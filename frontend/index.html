@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IBM Bob | AI-Powered Automated Bug-Fixing & Testing Agent</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="dark-theme">
+  <!-- Top Navigation Bar -->
+  <header class="topbar">
+    <div class="logo-group">
+      <div class="ibm-badge">IBM</div>
+      <div class="title-group">
+        <h1>Bob <span class="subtext">Autonomous Bug-Fixing & Testing Agent</span></h1>
+      </div>
+    </div>
+    <div class="topbar-status">
+      <div class="status-chip" id="wsStatus">
+        <span class="status-dot pulsing"></span>
+        <span id="wsStatusText">Connecting...</span>
+      </div>
+      <div class="status-chip engine-chip" id="engineModeBadge">
+        <span class="icon">⚡</span>
+        <span id="engineModeText">LangGraph + Sandbox</span>
+      </div>
+      <div class="status-chip model-chip">
+        <span class="icon">🤖</span>
+        <span>IBM Granite 3.0 / Bob</span>
+      </div>
+      <a href="/report" target="_blank" class="status-chip" style="text-decoration: none; color: inherit; cursor: pointer; border-color: var(--ibm-blue);">
+        <span class="icon">📄</span>
+        <span style="color: var(--ibm-blue); font-weight: 600;">Project Report</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="dashboard-grid">
+    <!-- Left Column: Controls & Pipeline State -->
+    <section class="panel control-panel">
+      <div class="panel-header">
+        <h2>Control Center</h2>
+        <span class="panel-tag">Agent Dispatch</span>
+      </div>
+
+      <div class="control-form">
+        <div class="form-group">
+          <label for="repoSelect">Target Repository</label>
+          <select id="repoSelect">
+            <option value="python_calculator">Python Calculator (pytest suite)</option>
+            <option value="js_string_utils">JS String Utils (Jest suite)</option>
+          </select>
+          <small class="helper-text" id="repoTypeHelper">Type: Python | Isolated Branch: Auto-created</small>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group half">
+            <label for="maxRetries">Max Retries</label>
+            <input type="number" id="maxRetries" min="1" max="5" value="3">
+          </div>
+          <div class="form-group half">
+            <label for="riskThreshold">Risk Gate (0 - 1.0)</label>
+            <input type="number" id="riskThreshold" min="0.1" max="1.0" step="0.1" value="0.4">
+          </div>
+        </div>
+
+        <div class="toggle-group">
+          <label class="toggle-switch">
+            <input type="checkbox" id="hitlToggle" checked>
+            <span class="slider"></span>
+          </label>
+          <div class="toggle-label">
+            <strong>Human-in-the-Loop (HITL)</strong>
+            <span>Require manual approval for risky code patches</span>
+          </div>
+        </div>
+
+        <div class="toggle-group">
+          <label class="toggle-switch">
+            <input type="checkbox" id="dockerToggle">
+            <span class="slider"></span>
+          </label>
+          <div class="toggle-label">
+            <strong>Docker Container Isolation</strong>
+            <span id="dockerLabelStatus">Sandboxed Subprocess Mode (Docker Inactive)</span>
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button id="startRunBtn" class="btn btn-primary">
+            <span class="btn-icon">▶</span> Run Bug-Fixing Agent
+          </button>
+          <button id="rollbackBtn" class="btn btn-secondary">
+            <span class="btn-icon">↺</span> Rollback Working Tree
+          </button>
+        </div>
+      </div>
+
+      <!-- LangGraph Pipeline Stage Visualizer -->
+      <div class="pipeline-section">
+        <h3>LangGraph Workflow State</h3>
+        <div class="pipeline-steps">
+          <div class="step-card" id="stepTestRunner">
+            <div class="step-num">1</div>
+            <div class="step-info">
+              <h4>Test Runner Agent</h4>
+              <p>Pytest / Jest execution</p>
+            </div>
+            <div class="step-status" id="statusTestRunner">Idle</div>
+          </div>
+
+          <div class="step-arrow">↓</div>
+
+          <div class="step-card" id="stepDebugger">
+            <div class="step-num">2</div>
+            <div class="step-info">
+              <h4>IBM Bob Debugger</h4>
+              <p>Root cause & diff synthesis</p>
+            </div>
+            <div class="step-status" id="statusDebugger">Idle</div>
+          </div>
+
+          <div class="step-arrow">↓</div>
+
+          <div class="step-card" id="stepApproval">
+            <div class="step-num">3</div>
+            <div class="step-info">
+              <h4>Human Approval Gate</h4>
+              <p>Safety & risk review</p>
+            </div>
+            <div class="step-status" id="statusApproval">Idle</div>
+          </div>
+
+          <div class="step-arrow">↓</div>
+
+          <div class="step-card" id="stepValidator">
+            <div class="step-num">4</div>
+            <div class="step-info">
+              <h4>Validation Agent</h4>
+              <p>Test verification & auto-commit</p>
+            </div>
+            <div class="step-status" id="statusValidator">Idle</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Center Column: Test Telemetry, Root Cause & Patch Viewer -->
+    <section class="panel center-panel">
+      <!-- Human in the loop action banner (hidden by default) -->
+      <div id="hitlBanner" class="hitl-banner hidden">
+        <div class="hitl-content">
+          <div class="hitl-badge">Action Required</div>
+          <h3>Patch Ready for Human Review</h3>
+          <p id="hitlMessage">The Debugging Agent has produced a candidate fix with risk score <span id="hitlRiskScore" class="bold">0.45</span>. Please review the patch below and approve or reject.</p>
+        </div>
+        <div class="hitl-actions">
+          <button id="approvePatchBtn" class="btn btn-success">✓ Approve & Apply</button>
+          <button id="rejectPatchBtn" class="btn btn-danger">✕ Reject Patch</button>
+        </div>
+      </div>
+
+      <!-- Metrics Row -->
+      <div class="metrics-row">
+        <div class="metric-card">
+          <div class="metric-label">Total Tests</div>
+          <div class="metric-value" id="mTotalTests">0</div>
+        </div>
+        <div class="metric-card success">
+          <div class="metric-label">Passing</div>
+          <div class="metric-value" id="mPassedTests">0</div>
+        </div>
+        <div class="metric-card danger">
+          <div class="metric-label">Failing</div>
+          <div class="metric-value" id="mFailedTests">0</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Iteration / Retries</div>
+          <div class="metric-value" id="mIteration">0 / 3</div>
+        </div>
+        <div class="metric-card" id="mRiskCard">
+          <div class="metric-label">Modification Risk</div>
+          <div class="metric-value" id="mRiskLevel">None</div>
+        </div>
+      </div>
+
+      <!-- Tabs: Root Cause, Patch Diff, Test Failures -->
+      <div class="tab-container">
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="tabPatch">Proposed Patch & Diff</button>
+          <button class="tab-btn" data-tab="tabFailures">Test Failures & Stack Traces</button>
+          <button class="tab-btn" data-tab="tabAnalysis">IBM Bob Root Cause Analysis</button>
+        </div>
+
+        <div class="tab-content active" id="tabPatch">
+          <div class="diff-header">
+            <span class="file-name" id="diffFileName">No active patch</span>
+            <span class="diff-tag" id="diffTag">Unified Diff</span>
+          </div>
+          <pre class="code-view" id="diffViewer"><code>Waiting for agent execution...</code></pre>
+        </div>
+
+        <div class="tab-content" id="tabFailures">
+          <div id="failuresList" class="failures-container">
+            <div class="empty-state">No failing tests recorded. Trigger a run to inspect diagnostics.</div>
+          </div>
+        </div>
+
+        <div class="tab-content" id="tabAnalysis">
+          <div class="analysis-box">
+            <h4>Root Cause Diagnosis</h4>
+            <p id="analysisText">Agent has not performed analysis yet.</p>
+            <div class="meta-row">
+              <span class="meta-item"><strong>Bug Category:</strong> <span id="anaCategory">-</span></span>
+              <span class="meta-item"><strong>Proposed Commit:</strong> <span id="anaCommit">-</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Terminal / Execution Log -->
+      <div class="terminal-panel">
+        <div class="terminal-header">
+          <div class="terminal-title">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
+            <span>Live Agent Execution Console</span>
+          </div>
+          <button id="clearLogsBtn" class="terminal-clear">Clear</button>
+        </div>
+        <div class="terminal-body" id="terminalLogs">
+          <div class="log-line info">[00:00:00] [SYSTEM] IBM Bob Bug-Fixing Agent initialized. Ready to execute.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Fix History & Git Branch Details -->
+    <section class="panel right-panel">
+      <div class="panel-header">
+        <h2>Fix History</h2>
+        <span class="panel-tag">Git Commits</span>
+      </div>
+
+      <div class="history-list" id="historyList">
+        <div class="empty-state">No automated fixes committed yet.</div>
+      </div>
+
+      <div class="repo-card">
+        <h3>Safe Git Sandbox</h3>
+        <p class="small-text">All modifications are safely isolated on a dedicated branch. Merging requires automated test verification.</p>
+        <div class="repo-meta">
+          <div><strong>Active Branch:</strong> <span id="metaActiveBranch">main</span></div>
+          <div><strong>Head Commit:</strong> <code id="metaHeadCommit">HEAD</code></div>
+          <div><strong>Status:</strong> <span id="metaStatus" class="tag-clean">Clean</span></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+# IBM Bob Automated Bug-Fixing & Testing Agent Configuration
+
+app:
+  name: "IBM Bob Bug-Fixing & Testing Agent"
+  version: "1.0.0"
+  host: "127.0.0.1"
+  port: 8000
+  debug: true
+
+agents:
+  test_runner:
+    timeout_seconds: 45
+    capture_stdout: true
+    capture_stderr: true
+  
+  debugger:
+    model: "ibm/granite-3-8b-instruct"
+    temperature: 0.1
+    max_tokens: 2048
+    infinite_loop_protection: true
+    duplicate_patch_threshold: 1
+
+  validator:
+    auto_commit_on_success: true
+    commit_author: "IBM Bob Bug-Fixing Agent <bob-agent@ibm.com>"
+    rollback_on_failure: true
+
+workflow:
+  default_max_retries: 3
+  default_hitl_enabled: true
+  default_risk_threshold: 0.40
+
+execution:
+  prefer_docker: false
+  docker_image_python: "python:3.11-slim"
+  docker_image_node: "node:20-alpine"
+  memory_limit: "512m"
+  cpu_limit: "1.0"
+
+repositories:
+  python_calculator:
+    path: "sample_repos/python_calculator"
+    type: "python"
+    runner: "pytest"
+  
+  js_string_utils:
+    path: "sample_repos/js_string_utils"
+    type: "javascript"
+    runner: "jest"

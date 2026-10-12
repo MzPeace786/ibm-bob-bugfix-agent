@@ -1,0 +1,23 @@
+{
+  "name": "ibm-bob-bugfix-agent",
+  "version": "1.0.0",
+  "description": "AI-Powered Automated Bug-Fixing & Testing Agent with IBM Bob and LangGraph",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "keywords": [
+    "ai-agent",
+    "bug-fixer",
+    "ibm-bob",
+    "langgraph",
+    "automated-testing",
+    "jest",
+    "pytest"
+  ],
+  "author": "IBM Bob Bug-Fixing Team",
+  "license": "Apache-2.0"
+}

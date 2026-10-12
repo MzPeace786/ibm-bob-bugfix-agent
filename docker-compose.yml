@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  ibm-bob-agent:
+    build: .
+    container_name: ibm_bob_bugfix_agent
+    ports:
+      - "8000:8000"
+    environment:
+      - WATSONX_APIKEY=${WATSONX_APIKEY:-}
+      - WATSONX_PROJECT_ID=${WATSONX_PROJECT_ID:-}
+      - WATSONX_URL=${WATSONX_URL:-https://us-south.ml.cloud.ibm.com}
+      - IBM_BOB_MODEL=${IBM_BOB_MODEL:-ibm/granite-3-8b-instruct}
+    volumes:
+      - ./sample_repos:/app/sample_repos
+    restart: unless-stopped
